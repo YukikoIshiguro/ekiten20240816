@@ -1,0 +1,39 @@
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+# Chromeオプションの設定
+options = Options()
+options.add_argument("--start-maximized")
+
+# ChromeDriverのサービス設定
+service = Service()
+
+# WebDriverの初期化
+driver = webdriver.Chrome(service=service, options=options)
+
+# エキテンのトップページにアクセス
+driver.get("https://www.ekiten.jp/g0210/a01218/")
+
+# 市区町村名を入力（例：北海道）
+search_input = driver.find_element(By.ID, "js-area-search-keyword")
+search_input.send_keys("北海道")
+
+# 入力後、候補が表示されるのを待つ
+wait = WebDriverWait(driver, 10)
+result_item = wait.until(
+    EC.visibility_of_element_located((By.CSS_SELECTOR, ".js-area-search-suggestion-item"))
+)
+
+# 最初に一致した結果をクリック
+result_item.click()
+
+# 画面遷移後に何か処理を行う場合、ここにコードを追加
+print(driver.title)
+
+# ブラウザを閉じる（必要に応じて）
+driver.quit()
