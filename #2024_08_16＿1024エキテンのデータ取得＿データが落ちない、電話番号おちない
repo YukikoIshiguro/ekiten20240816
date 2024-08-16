@@ -1,0 +1,46 @@
+import requests
+from bs4 import BeautifulSoup
+
+# Webサイトを取得して解析する
+#駅店のURLをクリックして画面遷移
+load_url = "https://www.ekiten.jp/shop_15095748/"
+html = requests.get(load_url)
+soup = BeautifulSoup(html.content, "html.parser")
+
+# 店舗名
+name_tag = soup.select_one(".ll-o-shopHeader__name")
+name = name_tag.text.strip() if name_tag else "店舗名なし"
+
+# キャッチコピー
+catch_copy_tag = soup.select_one(".ll-o-shopHeader__catch")
+catch_copy = catch_copy_tag.text.strip() if catch_copy_tag else "キャッチコピーなし"
+
+# 評価
+rating_tag = soup.select_one(".c-rating__val")
+rating = rating_tag.text.strip() if rating_tag else "評価なし"
+
+# 口コミ数
+review_count_tag = soup.select_one(".ll-o-shopHeader__reviewCount")
+review_count = review_count_tag.text.strip() if review_count_tag else "口コミ数なし"
+
+# 写真の枚数
+photo_count_tag = soup.select_one(".ll-o-shopHeader__photoCount")
+photo_count = photo_count_tag.text.strip() if photo_count_tag else "写真枚数なし"
+
+# 住所
+address_tag = soup.select_one(".p-map__address")
+address = address_tag.text.strip() if address_tag else "住所なし"
+
+# 営業時間
+hours_tag = soup.select_one(".p-shop__hours")
+hours = hours_tag.text.strip() if hours_tag else "営業時間なし"
+
+# 店舗情報を出力
+print(f"店舗名: {name}")
+print(f"キャッチコピー: {catch_copy}")
+print(f"評価: {rating}")
+print(f"口コミ数: {review_count}")
+print(f"写真枚数: {photo_count}")
+print(f"住所: {address}")
+print(f"営業時間: {hours}")
+#2024_08_16＿1024エキテンのデータ取得＿データが落ちない、電話番号おちない
