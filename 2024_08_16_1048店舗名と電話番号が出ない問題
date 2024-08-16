@@ -1,0 +1,73 @@
+import requests
+from bs4 import BeautifulSoup
+
+# ヘッダーにUser-Agentを追加してリクエストを送る
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+}
+
+# Webサイトを取得して解析する
+load_url = "https://www.ekiten.jp/shop_15095748/"
+response = requests.get(load_url, headers=headers)
+
+if response.status_code != 200:
+    print(f"ウェブサイトのリクエストに失敗しました。ステータスコード: {response.status_code}")
+else:
+    soup = BeautifulSoup(response.content, "html.parser")
+
+    # 店舗名
+    name_tag = soup.select_one(".ll-o-shopHeader__name")
+    name = name_tag.text.strip() if name_tag else "店舗名なし"
+
+    # 電話番号
+    phone_tag = soup.select_one(".ll-o-shopHeader__telNumber")
+    phone = phone_tag.text.strip() if phone_tag else "電話番号なし"
+
+    # 住所
+    address_tag = soup.find('address', class_="ll-u-mb15")
+    address = address_tag.text.strip() if address_tag else "住所なし"
+
+    # アクセス
+    access_tag = soup.find('p', class_="ll-a-bodyText ll-a-bodyText--m")
+    access = access_tag.text.strip() if access_tag else "アクセス情報なし"
+
+    # 最寄駅
+    nearest_station_tags = soup.select("dt:-soup-contains('最寄駅') + dd .ll-m-textList__item")
+    nearest_stations = [station.text.strip() for station in nearest_station_tags] if nearest_station_tags else ["最寄駅情報なし"]
+
+    # バス停
+    bus_stop_tags = soup.select("dt:-soup-contains('バス停') + dd .ll-m-textList__item")
+    bus_stops = [stop.text.strip() for stop in bus_stop_tags] if bus_stop_tags else ["バス停情報なし"]
+
+    # 営業時間
+    business_hours_tags = soup.select('.ll-m-businessHourList__term, .ll-m-businessHourList__time')
+    business_hours = [f"{term.text.strip()}: {time.text.strip()}" for term, time in zip(business_hours_tags[::2], business_hours_tags[1::2])] if business_hours_tags else ["営業時間なし"]
+
+    # 営業時間補足
+    extra_hours_tag = soup.find('dd', string=lambda x: "予約受付" in x if x else False)
+    extra_hours = extra_hours_tag.text.strip() if extra_hours_tag else "営業時間補足なし"
+
+    # 定休日補足
+    extra_closed_tag = soup.find('dd', string=lambda x: any(phrase in x for phrase in ["年末年始", "お盆"]) if x else False)
+    extra_closed = extra_closed_tag.text.strip() if extra_closed_tag else "定休日補足なし"
+
+    # 駐車場情報
+    parking_header_tag = soup.find('h3', string="駐車場")
+    if parking_header_tag:
+        parking_tag = parking_header_tag.find_next('div')
+        parking_info = parking_tag.text.strip() if parking_tag else "駐車場情報なし"
+    else:
+        parking_info = "駐車場情報なし"
+
+    # 出力
+    print(f"店舗名: {name}")
+    print(f"電話番号: {phone}")
+    print(f"住所: {address}")
+    print(f"アクセス: {access}")
+    print(f"最寄駅: {', '.join(nearest_stations)}")
+    print(f"バス停: {', '.join(bus_stops)}")
+    print(f"営業時間: {', '.join(business_hours)}")
+    print(f"営業時間補足: {extra_hours}")
+    print(f"定休日補足: {extra_closed}")
+    print(f"駐車場: {parking_info}")
+#2024_08_16店舗名と電話番号が出ない問題と口コミがいっぱい出る問題
