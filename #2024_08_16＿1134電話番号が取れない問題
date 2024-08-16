@@ -1,0 +1,65 @@
+import requests
+from bs4 import BeautifulSoup
+
+# ヘッダーにUser-Agentを追加してリクエストを送る
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+}
+
+# Webサイトを取得して解析する
+load_url = "https://www.ekiten.jp/shop_15095748/"
+response = requests.get(load_url, headers=headers)
+
+if response.status_code != 200:
+    print(f"ウェブサイトのリクエストに失敗しました。ステータスコード: {response.status_code}")
+else:
+    soup = BeautifulSoup(response.content, "html.parser")
+
+    # 店舗名
+    # <h1 class="ll-a-heading ll-a-heading--xxl">宮原整体院</h1>のセレクターで指定しました！
+    name_tag = soup.select_one("h1.ll-a-heading--xxl")
+    name = name_tag.text.strip() if name_tag else "店舗名なし"
+    # 店舗名でデバッグ
+    print(f"{name}だよ")
+
+    # 親要素を取得
+    parent_div = soup.select_one("div.ll-m-contentSection__body")
+
+    # 子要素の電話番号を取得
+    if parent_div:
+        phone_tag = parent_div.select_one(".ll-o-shopHeader__telNumber")
+        if phone_tag:
+            phone = phone_tag.text.strip()
+            print(phone + " だよ")
+        else:
+            print("電話番号が見つかりませんでした")
+    else:
+        print("指定されたコンテンツセクションが見つかりませんでした")
+    
+    # 電話番号でデバッグ
+    print(f"{phone}だよ")
+
+    # 住所
+    address_tag = soup.find('address', class_="ll-u-mb15")
+    address = address_tag.text.strip() if address_tag else "住所なし"
+
+    # 営業時間
+    business_hours_tags = soup.select('.ll-m-businessHourList__term, .ll-m-businessHourList__time')
+    business_hours = [f"{term.text.strip()}: {time.text.strip()}" for term, time in zip(business_hours_tags[::2], business_hours_tags[1::2])] if business_hours_tags else ["営業時間なし"]
+
+    # 営業時間補足
+    extra_hours_tag = soup.find('dd', string=lambda x: "予約受付" in x if x else False)
+    extra_hours = extra_hours_tag.text.strip() if extra_hours_tag else "営業時間補足なし"
+
+    # 定休日補足
+    extra_closed_tag = soup.find('dd', string=lambda x: any(phrase in x for phrase in ["年末年始", "お盆"]) if x else False)
+    extra_closed = extra_closed_tag.text.strip() if extra_closed_tag else "定休日補足なし"
+
+    # 出力
+    print(f"店舗名: {name}")
+    print(f"電話番号: {phone}")
+    print(f"営業時間: {', '.join(business_hours)}")
+    print(f"住所: {address}")
+    print(f"営業時間補足: {extra_hours}")
+    print(f"定休日補足: {extra_closed}")
+#2024_08_16＿1134電話番号が取れない問題
