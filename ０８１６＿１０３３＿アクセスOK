@@ -1,0 +1,86 @@
+import requests
+from bs4 import BeautifulSoup
+
+# ヘッダーにUser-Agentを追加してリクエストを送る
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+}
+
+# Webサイトを取得して解析する
+load_url = "https://www.ekiten.jp/shop_15095748/"
+response = requests.get(load_url, headers=headers)
+
+# ステータスコードを確認して、ページ取得が成功しているかチェック
+if response.status_code != 200:
+    print(f"ウェブサイトのリクエストに失敗しました。ステータスコード: {response.status_code}")
+else:
+    soup = BeautifulSoup(response.content, "html.parser")
+
+    # HTMLの内容を一部出力して確認（デバッグ用）
+    print(soup.prettify()[:1000])  # 最初の1000文字だけ出力して確認
+
+    # 店舗名
+    name_tag = soup.select_one(".ll-o-shopHeader__name")
+    if not name_tag:
+        print("店舗名の要素が見つかりません。セレクタを確認してください。")
+        name = "店舗名なし"
+    else:
+        name = name_tag.text.strip()
+
+    # キャッチコピー
+    catch_copy_tag = soup.select_one(".ll-o-shopHeader__catch")
+    if not catch_copy_tag:
+        print("キャッチコピーの要素が見つかりません。セレクタを確認してください。")
+        catch_copy = "キャッチコピーなし"
+    else:
+        catch_copy = catch_copy_tag.text.strip()
+
+    # 評価
+    rating_tag = soup.select_one(".c-rating__val")
+    if not rating_tag:
+        print("評価の要素が見つかりません。セレクタを確認してください。")
+        rating = "評価なし"
+    else:
+        rating = rating_tag.text.strip()
+
+    # 口コミ数
+    review_count_tag = soup.select_one(".ll-o-shopHeader__reviewCount")
+    if not review_count_tag:
+        print("口コミ数の要素が見つかりません。セレクタを確認してください。")
+        review_count = "口コミ数なし"
+    else:
+        review_count = review_count_tag.text.strip()
+
+    # 写真の枚数
+    photo_count_tag = soup.select_one(".ll-o-shopHeader__photoCount")
+    if not photo_count_tag:
+        print("写真枚数の要素が見つかりません。セレクタを確認してください。")
+        photo_count = "写真枚数なし"
+    else:
+        photo_count = photo_count_tag.text.strip()
+
+    # 住所
+    address_tag = soup.select_one(".p-map__address")
+    if not address_tag:
+        print("住所の要素が見つかりません。セレクタを確認してください。")
+        address = "住所なし"
+    else:
+        address = address_tag.text.strip()
+
+    # 営業時間
+    hours_tag = soup.select_one(".p-shop__hours")
+    if not hours_tag:
+        print("営業時間の要素が見つかりません。セレクタを確認してください。")
+        hours = "営業時間なし"
+    else:
+        hours = hours_tag.text.strip()
+
+    # 店舗情報を出力
+    print(f"店舗名: {name}")
+    print(f"キャッチコピー: {catch_copy}")
+    print(f"評価: {rating}")
+    print(f"口コミ数: {review_count}")
+    print(f"写真枚数: {photo_count}")
+    print(f"住所: {address}")
+    print(f"営業時間: {hours}")
+#08_16_1033データ落ちない問題＿WebサイトアクセスOK
