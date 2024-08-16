@@ -1,0 +1,139 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from bs4 import BeautifulSoup
+import time
+import pandas as pd
+import os
+
+# WebDriverの初期化
+driver = webdriver.Chrome()
+
+# 店舗リストのページにアクセス★高橋さん＆矢野さんへここに市区町村のURLを入れてください(#^^#)★
+driver.get("https://www.ekiten.jp/g0210/a01231/")  # 例として「札幌市」のマッサージ店リストページ
+
+# 取得したデータを保存するリスト
+results = []
+
+def extract_store_data(store_url):
+    driver.get(store_url)
+    time.sleep(0.001)  # ページ読み込みの待機
+    soup = BeautifulSoup(driver.page_source, "html.parser")
+
+    # 店舗名
+    name_tag = soup.select_one("h1.ll-a-heading--xxl")
+    name = name_tag.text.strip() if name_tag else "店舗名なし"
+
+    # 電話番号
+    phone_tag = soup.select_one('address a[href^="tel:"]')
+    phone = phone_tag.text.strip() if phone_tag else "電話番号なし"
+
+    # 住所
+    address_tag = soup.find('address', class_="ll-u-mb15")
+    address = address_tag.text.strip() if address_tag else "住所なし"
+
+    # 営業時間
+    business_hours_tags = soup.select('.ll-m-businessHourList__term, .ll-m-businessHourList__time')
+    business_hours = [f"{term.text.strip()}: {time.text.strip()}" for term, time in zip(business_hours_tags[::2], business_hours_tags[1::2])] if business_hours_tags else ["営業時間なし"]
+    business_hours_str = ', '.join(business_hours)
+
+    # 評価ポイント
+    rating_element = soup.select_one('span.ll-a-ratingPoint__text')
+    rating_text = rating_element.text.strip() if rating_element else "評価ポイントなし"
+
+    # 口コミ件数
+    review_count_text = "口コミ件数なし"  # デフォルト値
+    css_selectors = [
+        '#pageTop > div.mainFrame > div.mainContainer > div.shopPageHeader > div > div.ll-o-shopHeader__body > div:nth-child(4) > div > div:nth-child(1) > dl > div:nth-child(1) > dd > a > span',
+        'div.ll-o-shopHeader__body > div:nth-child(3) > div > div:nth-child(1) > dl > div:nth-child(1) > dd > a > span',
+        'div.ll-o-shopHeader__body > div:nth-child(4) > div > div:nth-child(1) > dl > div:nth-child(1) > dd > a > span'
+    ]
+    
+    # CSSセレクタで口コミ件数を取得
+    for selector in css_selectors:
+        try:
+            review_count_element = soup.select_one(selector)
+            if review_count_element:
+                review_count_text = review_count_element.text.strip()
+                break
+        except Exception as e:
+            continue
+
+    # XPathを使用して口コミ件数を取得
+    if review_count_text == "口コミ件数なし":
+        try:
+            review_count_element = driver.find_element(By.XPATH, '//*[@id="pageTop"]/div[1]/div[3]/div[2]/div/div[1]/div[4]/div/div[1]/dl/div[1]/dd/a/span')
+            review_count_text = review_count_element.text.strip()
+        except Exception as e:
+            pass
+
+    # BeautifulSoupでデフォルトテキストを探す
+    if review_count_text == "口コミ件数なし":
+        try:
+            review_count_element = soup.find('a', text=lambda x: '口コミ' in x)
+            if review_count_element:
+                review_count_text = review_count_element.find_next('span').text.strip()
+        except Exception as e:
+            pass
+
+    # データをリストとして保存
+    results.append({
+        "店舗名": name,
+        "電話番号": phone,
+        "住所": address,
+        "営業時間": business_hours_str,
+        "評価": rating_text,
+        "口コミ数": review_count_text
+    })
+
+    print(f"店舗名: {name}")
+    print(f"電話番号: {phone}")
+    print(f"住所: {address}")
+    print(f"営業時間: {business_hours_str}")
+    print(f"評価: {rating_text}")
+    print(f"口コミ数: {review_count_text}")
+    print("-" * 50)
+
+def get_all_store_links():
+    # 店舗のリンクをすべて取得
+    store_links = []
+    stores = driver.find_elements(By.CSS_SELECTOR, "div.ll-m-cassetteContainer a.ll-o-shopCassette__link")
+    for store in stores:
+        store_links.append(store.get_attribute("href"))
+    return store_links
+
+try:
+    # ページごとの処理
+    while True:
+        store_links = get_all_store_links()
+        
+        # 各店舗のリンクをクリックしてデータを抽出
+        for link in store_links:
+            extract_store_data(link)
+        
+        # 次のページがあるか確認
+        next_button = driver.find_elements(By.CSS_SELECTOR, ".ll-a-button--nextPage")
+        if next_button:
+            next_button[0].click()
+            time.sleep(2)  # ページ遷移を待つ
+        else:
+            break  # 次のページがなければ終了
+
+    # データをExcelに保存
+    if results:
+        df = pd.DataFrame(results)
+        
+        # 出力ファイルパスをユーザーのドキュメントフォルダに設定
+        output_directory = os.path.join(os.path.expanduser('~'), 'Documents')
+        output_file_path = os.path.join(output_directory, 'seitai_data.xlsx')
+        
+        # データフレームをExcelファイルに書き出す
+        df.to_excel(output_file_path, index=False, engine='openpyxl')
+        
+        print(f"Excelファイル '{output_file_path}' に保存されました！")
+
+except Exception as e:
+    print(f"エラーが発生しました: {e}")
+
+finally:
+    # ブラウザを閉じる
+    driver.quit()
